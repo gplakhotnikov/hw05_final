@@ -39,11 +39,8 @@ def profile(request, username):
     count = post_list.count()
     paginator = Paginator(post_list, settings.NUM_POSTS)
     page_number = request.GET.get('page')
-    following = False
-    authenticated = request.user.is_authenticated
-    if authenticated and Follow.objects.filter(user=request.user,
-                                               author=author):
-        following = True
+    following = (request.user.is_authenticated and Follow.
+                 objects.filter(user=request.user, author=author))
     page_obj = paginator.get_page(page_number)
     context = {
         'author': author,
@@ -51,7 +48,7 @@ def profile(request, username):
         'name': name,
         'page_obj': page_obj,
         'following': following,
-        'authenticated': authenticated, }
+        'authenticated': request.user.is_authenticated, }
     return render(request, 'posts/profile.html', context)
 
 
@@ -71,7 +68,7 @@ def post_detail(request, post_id):
 @login_required
 def post_create(request):
     groups = Group.objects.all()
-    if request.method != "POST":
+    if request.method != 'POST':
         form = PostForm()
         return render(
             request,
@@ -124,8 +121,11 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    authors_id = request.user.follower.all().values_list('author', flat=True)
-    post_list = Post.objects.filter(author_id__in=authors_id)
+    authors = request.user.follower.all().values_list('author', flat=True)
+    post_list = []
+    for id in authors:
+        author = get_object_or_404(User, id=id)
+        post_list += author.posts.all()
     paginator = Paginator(post_list, settings.NUM_POSTS)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -146,5 +146,6 @@ def profile_follow(request, username):
 def profile_unfollow(request, username):
     user_to_unfollow = User.objects.get(username=username)
     entry = Follow.objects.filter(user=request.user, author=user_to_unfollow)
-    entry.delete()
+    if entry.exists:
+        entry.delete()
     return redirect('posts:profile', username)

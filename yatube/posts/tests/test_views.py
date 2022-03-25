@@ -245,7 +245,7 @@ class PaginatorTests(TestCase):
         self.assertEqual(len(response.context['page_obj']), 5)
 
 
-class CommentsTests(TestCase):
+class FollowTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -255,33 +255,37 @@ class CommentsTests(TestCase):
     def setUp(self):
         cache.clear()
         self.authorized_client_1 = Client()
-        self.authorized_client_1.force_login(CommentsTests.user_1)
+        self.authorized_client_1.force_login(FollowTests.user_1)
         self.authorized_client_2 = Client()
-        self.authorized_client_2.force_login(CommentsTests.user_2)
+        self.authorized_client_2.force_login(FollowTests.user_2)
 
     def test_follow(self):
         (self.authorized_client_1.
             get(reverse('posts:profile_follow',
-                kwargs={'username': CommentsTests.user_2})))
-        followed_user = (CommentsTests.
+                kwargs={'username': FollowTests.user_2})))
+        followed_user = (FollowTests.
                          user_1.follower.all().values_list('author',
                                                            flat=True)[0])
-        self.assertEqual(followed_user, CommentsTests.user_2.id)
+        self.assertEqual(followed_user, FollowTests.user_2.id)
 
     def test_unfollow(self):
-        self.test_follow()
+        (self.authorized_client_1.
+            get(reverse('posts:profile_follow',
+                kwargs={'username': FollowTests.user_2})))
         (self.authorized_client_1.
             get(reverse('posts:profile_unfollow',
-                kwargs={'username': CommentsTests.user_2})))
-        followed_list = (CommentsTests.
+                kwargs={'username': FollowTests.user_2})))
+        followed_list = (FollowTests.
                          user_1.follower.all().values_list('author',
                                                            flat=True))
         self.assertFalse(followed_list.exists())
 
     def test_new_entry_appears_for_proper_user(self):
-        self.test_follow()
+        (self.authorized_client_1.
+            get(reverse('posts:profile_follow',
+                kwargs={'username': FollowTests.user_2})))
         post = Post.objects.create(
-            author=CommentsTests.user_2,
+            author=FollowTests.user_2,
             group=None,
             text='Тестовый пост',)
         response = (self.authorized_client_1.
@@ -291,9 +295,11 @@ class CommentsTests(TestCase):
         self.assertEqual(post, response.context['page_obj'][0])
 
     def test_new_entry_not_appear_for_inproper_user(self):
-        self.test_follow()
+        (self.authorized_client_1.
+            get(reverse('posts:profile_follow',
+                kwargs={'username': FollowTests.user_2})))
         post = Post.objects.create(
-            author=CommentsTests.user_2,
+            author=FollowTests.user_2,
             group=None,
             text='Тестовый пост',)
         response = (self.authorized_client_2.

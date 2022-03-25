@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from http import HTTPStatus
-from posts.models import Group, Post
+from posts.models import Group, Post, Comment
 
 from django.core.cache import cache
 
@@ -22,6 +22,11 @@ class PostsURLTests(TestCase):
             author=cls.user0,
             text='Тестовый пост',
         )
+        cls.comment = Comment.objects.create(
+            post=cls.post,
+            author=cls.user0,
+            text='Комментарий'
+        ) 
 
     def setUp(self):
         cache.clear()
@@ -53,6 +58,16 @@ class PostsURLTests(TestCase):
         id = post.id
         response = self.guest_client.get(f'/posts/{id}/')
         self.assertEqual(response.status_code, HTTPStatus.OK)
+    
+    def test_create_page_guest(self):
+        response = self.guest_client.get('/create/', follow=True)
+        self.assertRedirects(
+            response, ('/auth/login/?next=/create/')
+        )
+
+    def test_create_page(self):
+        response = self.authorized_client.get('/create/')
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_post_edit_page_guest(self):
         post = PostsURLTests.post
@@ -78,18 +93,23 @@ class PostsURLTests(TestCase):
             f'/posts/{id}/edit/', follow=True)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-    def test_create_page_guest(self):
-        response = self.guest_client.get('/create/', follow=True)
-        self.assertRedirects(
-            response, ('/auth/login/?next=/create/')
-        )
+    def test_follow_page(self):
+        response = self.authorized_client0.get(
+            '/follow/', follow=True)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
-    def test_create_page(self):
-        response = self.authorized_client.get('/create/')
+    def test_following_page(self):
+        response = self.authorized_client0.get(
+            '/profile/test/follow', follow=True)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_unfollowing_page(self):
+        response = self.authorized_client0.get(
+            '/profile/test/unfollow', follow=True)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_nonexisting_page(self):
-        response = self.guest_client.get('/theory/')
+        response = self.guest_client.get('/nonexisting/')
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_urls_uses_correct_template(self):
@@ -105,8 +125,11 @@ class PostsURLTests(TestCase):
             post_url: 'posts/post_detail.html',
             post_edit_url: 'posts/create_post.html',
             '/create/': 'posts/create_post.html',
+            '/follow/': 'posts/follow.html',
+            '/profile/test/follow': 'posts/profile.html',
+            '/profile/test/unfollow': 'posts/profile.html',
         }
         for address, template in templates_url_names.items():
             with self.subTest(address=address):
-                response = self.authorized_client0.get(address)
+                response = self.authorized_client0.get(address, follow=True)
                 self.assertTemplateUsed(response, template)
