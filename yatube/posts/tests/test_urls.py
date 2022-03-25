@@ -26,7 +26,7 @@ class PostsURLTests(TestCase):
             post=cls.post,
             author=cls.user0,
             text='Комментарий'
-        ) 
+        )
 
     def setUp(self):
         cache.clear()
@@ -58,7 +58,7 @@ class PostsURLTests(TestCase):
         id = post.id
         response = self.guest_client.get(f'/posts/{id}/')
         self.assertEqual(response.status_code, HTTPStatus.OK)
-    
+
     def test_create_page_guest(self):
         response = self.guest_client.get('/create/', follow=True)
         self.assertRedirects(
