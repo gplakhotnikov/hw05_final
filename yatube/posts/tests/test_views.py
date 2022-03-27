@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from posts.forms import PostForm
-from posts.models import Group, Post
+from posts.models import Group, Post, Follow
 
 from django.core.cache import cache
 
@@ -269,9 +269,10 @@ class FollowTests(TestCase):
         self.assertEqual(followed_user, FollowTests.user_2.id)
 
     def test_unfollow(self):
-        (self.authorized_client_1.
-            get(reverse('posts:profile_follow',
-                kwargs={'username': FollowTests.user_2})))
+        Follow.objects.create(
+            user=FollowTests.user_1,
+            author=FollowTests.user_2
+        )
         (self.authorized_client_1.
             get(reverse('posts:profile_unfollow',
                 kwargs={'username': FollowTests.user_2})))
@@ -281,9 +282,10 @@ class FollowTests(TestCase):
         self.assertFalse(followed_list.exists())
 
     def test_new_entry_appears_for_proper_user(self):
-        (self.authorized_client_1.
-            get(reverse('posts:profile_follow',
-                kwargs={'username': FollowTests.user_2})))
+        Follow.objects.create(
+            user=FollowTests.user_1,
+            author=FollowTests.user_2
+        )
         post = Post.objects.create(
             author=FollowTests.user_2,
             group=None,
@@ -295,9 +297,10 @@ class FollowTests(TestCase):
         self.assertEqual(post, response.context['page_obj'][0])
 
     def test_new_entry_not_appear_for_inproper_user(self):
-        (self.authorized_client_1.
-            get(reverse('posts:profile_follow',
-                kwargs={'username': FollowTests.user_2})))
+        Follow.objects.create(
+            user=FollowTests.user_1,
+            author=FollowTests.user_2
+        )
         post = Post.objects.create(
             author=FollowTests.user_2,
             group=None,

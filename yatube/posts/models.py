@@ -104,9 +104,9 @@ class Follow(models.Model):
         help_text='Тот пользователь, на которого решают подписаться')
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['user', 'author'],
-                                    name='unique_pair')]
+        constraints = (
+            models.UniqueConstraint(fields=('user', 'author'),
+                                    name='unique_pair'))
         verbose_name = 'Модель Follow (user фолловит author)'
         verbose_name_plural = 'Модели Follow'
 
