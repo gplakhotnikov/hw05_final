@@ -50,6 +50,7 @@ class Post(CreatedModel):
         upload_to='posts/',
         help_text='Изображение для записи'
     )
+    pub_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ('-pub_date',)
@@ -106,7 +107,7 @@ class Follow(models.Model):
     class Meta:
         constraints = (
             models.UniqueConstraint(fields=('user', 'author'),
-                                    name='unique_pair'))
+                                    name='unique_pair'),)
         verbose_name = 'Модель Follow (user фолловит author)'
         verbose_name_plural = 'Модели Follow'
 
